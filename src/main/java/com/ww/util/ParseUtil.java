@@ -9,9 +9,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,10 +26,10 @@ import org.slf4j.LoggerFactory;
  */
 public class ParseUtil {
 
-    private static final String SEARCH_HISTORY = "SEARCH_HISTORY";
+    private static final String SEARCH_HISTORY_TB = "SEARCH_HISTORY";
     private static final String USER_ID = "USER_ID";
     private static final String SEARCH_TEXT = "SEARCH_TEXT";
-    private static final String NEWS_JSON = "NEWS_JSON";
+    private static final String NEWS_JSON_TB = "NEWS_JSON";
     protected static final String MAX_TS = "MAX_TS";
     protected static final String JSON = "JSON";
     private String fetchedNewsJson;
@@ -52,7 +50,7 @@ public class ParseUtil {
     }
 
     public void saveSearchText(final String userId, final String searchText) {
-        ParseQuery<ParseObject> searchQuery = ParseQuery.getQuery(SEARCH_HISTORY);
+        ParseQuery<ParseObject> searchQuery = ParseQuery.getQuery(SEARCH_HISTORY_TB);
         searchQuery.whereEqualTo(USER_ID, userId).findInBackground(new FindCallback<ParseObject>() {
 
             @Override
@@ -64,7 +62,7 @@ public class ParseUtil {
                         searchHistory.put(SEARCH_TEXT, searchHistoryText);
                         searchHistory.saveInBackground();
                     } else {
-                        ParseObject searchHistory = new ParseObject(SEARCH_HISTORY);
+                        ParseObject searchHistory = new ParseObject(SEARCH_HISTORY_TB);
                         searchHistory.put(SEARCH_TEXT, searchText);
                         searchHistory.put(USER_ID, userId);
                         searchHistory.saveInBackground();
@@ -109,7 +107,7 @@ public class ParseUtil {
         long maxTS = 0;
         JsonFactory factory = new JsonFactory();
         try {
-            JsonParser parser = factory.createParser(new File(this.getClass().getResource("/news_json.json").toURI()));
+            JsonParser parser = factory.createParser(newsJson);
             while (!parser.isClosed()) {
                 JsonToken token = parser.nextToken();
                 if (token == null) {
@@ -130,11 +128,9 @@ public class ParseUtil {
         } catch (IOException e) {
             // TODO Auto-generated catch block
             logger.error("File not found ", e);
-        } catch (URISyntaxException ex) {
-            Logger.getLogger(ParseUtil.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        ParseObject newsObject = new ParseObject(NEWS_JSON);
+        ParseObject newsObject = new ParseObject(NEWS_JSON_TB);
         newsObject.put(SEARCH_TEXT, searchText);
         newsObject.put(JSON, newsJson);
         newsObject.put(MAX_TS, maxTS);
@@ -144,7 +140,7 @@ public class ParseUtil {
 
     public String getNewsJson(String searchText) {
         try {
-            ParseQuery<ParseObject> query = ParseQuery.getQuery(NEWS_JSON);
+            ParseQuery<ParseObject> query = ParseQuery.getQuery(NEWS_JSON_TB);
             query.whereEqualTo(SEARCH_TEXT, searchText);
             List<ParseObject> list = query.find();
             if (list == null) {
