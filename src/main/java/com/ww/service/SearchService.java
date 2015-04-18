@@ -21,16 +21,26 @@ import org.slf4j.LoggerFactory;
  */
 @Path("/ww/{userId}/search/{searchText}")
 public class SearchService {
+
     private static final Logger logger = LoggerFactory.getLogger(SearchService.class);
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public String searchText(@PathParam("searchText") String searchText, @PathParam("userId") String userId) {
-        logger.info("Search Request by {} received: {}",userId, searchText);
+        logger.info("Search Request by {} received: {}", userId, searchText);
         searchText = HttpUtil.encodeString(searchText);
         ParseUtil parseUtil = ParseUtil.getInstance();
+
+        String newsJson = parseUtil.getNewsJson(searchText);
+        if (newsJson == null) {
+            String[] params = {"http://www.faroo.com/api", "q", searchText, "length", "10", "l", 
+                "en", "src", "news", "i", "true", "f", "json", "key", "FuZMJiD@y11PASdasEzBHKIYn2Q_"};
+            newsJson = HttpUtil.getStringFromURL(params);
+            parseUtil.updateNewsTable(newsJson, searchText);
+        }
+
         parseUtil.saveSearchText(userId, searchText);
-        String[] params = {"http://www.faroo.com/api", "q", searchText, "length", "10", "l", "en", "src", "news", "i", "true", "f", "json", "key", "FuZMJiD@y11PASdasEzBHKIYn2Q_"};
-        return HttpUtil.getStringFromURL(params);
+        return newsJson;
     }
-    
+
 }

@@ -5,7 +5,16 @@
  */
 package com.ww.util;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.parse4j.Parse;
 import org.parse4j.ParseException;
 import org.parse4j.ParseObject;
@@ -22,6 +31,11 @@ public class ParseUtil {
     private static final String SEARCH_HISTORY = "SEARCH_HISTORY";
     private static final String USER_ID = "USER_ID";
     private static final String SEARCH_TEXT = "SEARCH_TEXT";
+    private static final String NEWS_JSON = "NEWS_JSON";
+    protected static final String MAX_TS = "MAX_TS";
+    protected static final String JSON = "JSON";
+    private String fetchedNewsJson;
+
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ParseUtil.class);
 
     private static ParseUtil SINGLETON;
@@ -89,6 +103,61 @@ public class ParseUtil {
             searchHistoryText = searchHistoryText.substring(1);
             return searchHistoryText;
         }
+    }
+
+    public void updateNewsTable(String newsJson, String searchText) {
+        long maxTS = 0;
+        JsonFactory factory = new JsonFactory();
+        try {
+            JsonParser parser = factory.createParser(new File(this.getClass().getResource("/news_json.json").toURI()));
+            while (!parser.isClosed()) {
+                JsonToken token = parser.nextToken();
+                if (token == null) {
+                    break;
+                }
+                String fieldName = parser.getCurrentName();
+                if (fieldName != null && fieldName.equals("date")) {
+                    parser.nextToken();
+                    long date = Long.parseLong(parser.getText());
+                    if (maxTS < date) {
+                        maxTS = date;
+                    }
+                }
+            }
+        } catch (JsonParseException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            logger.error("File not found ", e);
+        } catch (URISyntaxException ex) {
+            Logger.getLogger(ParseUtil.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        ParseObject newsObject = new ParseObject(NEWS_JSON);
+        newsObject.put(SEARCH_TEXT, searchText);
+        newsObject.put(JSON, newsJson);
+        newsObject.put(MAX_TS, maxTS);
+        newsObject.saveInBackground();
+
+    }
+
+    public String getNewsJson(String searchText) {
+        try {
+            ParseQuery<ParseObject> query = ParseQuery.getQuery(NEWS_JSON);
+            query.whereEqualTo(SEARCH_TEXT, searchText);
+            List<ParseObject> list = query.find();
+            if (list == null) {
+                fetchedNewsJson = null;
+            } else {
+                ParseObject obj = list.get(0);
+                fetchedNewsJson = obj.getString(JSON);
+            }
+            return fetchedNewsJson;
+        } catch (ParseException ex) {
+            Logger.getLogger(ParseUtil.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
     }
 
 }
