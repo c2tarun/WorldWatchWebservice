@@ -13,6 +13,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClients;
 import org.parse4j.Parse;
 import org.parse4j.ParseException;
 import org.parse4j.ParseObject;
@@ -32,6 +37,7 @@ public class ParseUtil {
     private static final String NEWS_JSON_TB = "NEWS_JSON";
     protected static final String MAX_TS = "MAX_TS";
     protected static final String JSON = "JSON";
+    protected static final String URL = "https://api.parse.com/1/push";
     private String fetchedNewsJson;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ParseUtil.class);
@@ -156,4 +162,41 @@ public class ParseUtil {
         return null;
     }
 
+    public void deleteSearchText(String userId, String searchText) throws ParseException {
+        ParseQuery<ParseObject> query = ParseQuery.getQuery(SEARCH_HISTORY_TB);
+        query.whereEqualTo(USER_ID, userId);
+        List<ParseObject> searchHistories = query.find();
+        if (!searchHistories.isEmpty()) {
+            ParseObject searchHistory = searchHistories.get(0);
+            String searchTexts = searchHistory.getString(SEARCH_TEXT);
+            searchTexts = searchTexts.replaceAll(searchText, "").replaceAll(";;", ";");
+            char ch = searchTexts.charAt(searchTexts.length() - 1);
+            if (ch == ';') {
+                searchTexts = searchTexts.substring(0, searchTexts.length() - 1);
+            }
+            ch = searchTexts.charAt(0);
+            if (ch == ';') {
+                searchTexts = searchTexts.substring(1);
+            }
+            searchHistory.put(SEARCH_TEXT, searchTexts);
+            searchHistory.save();
+        }
+    }
+    public void push(String searchKeyword, String userEmail) {
+        try {
+            String data = "{\"where\": {\"useremail\": \""+userEmail+"\"},\"data\": {\"keywords\": [\""+searchKeyword+"\"]}}";
+            HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(RequestConfig.custom().build()).build();
+            HttpPost post = new HttpPost(URL);
+            post.setHeader("X-Parse-Application-Id", "WhqWj009luOxOtIH3rM9iWJICLdf0NKbgqdaui8Q");
+            post.setHeader("X-Parse-REST-API-Key", "lThhKObAz1Tkt092Cl1HeZv4KLUsdATvscOaGN2y");
+            post.setHeader("Content-Type", "application/json");
+            StringEntity strEntity = new StringEntity(data);
+            post.setEntity(strEntity);
+            httpClient.execute(post);
+            logger.debug("Pushed {} to userId {}", data.toString(), userEmail);
+        } catch (Exception ex) {
+            logger.error("Push Failed for {} ", userEmail, ex);
+        }
+
+    }
 }

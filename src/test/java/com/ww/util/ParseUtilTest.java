@@ -5,6 +5,7 @@
  */
 package com.ww.util;
 
+import java.text.ParseException;
 import org.junit.Test;
 
 /**
@@ -13,10 +14,16 @@ import org.junit.Test;
  */
 public class ParseUtilTest {
     
+//    @Test
+//    public void testNewsTableMethod() {
+//        ParseUtil parseUtil = ParseUtil.getInstance();
+//        parseUtil.updateNewsTable(null, null);
+//    }
+//    
     @Test
-    public void testNewsTableMethod() {
+    public void testPush() throws ParseException {
         ParseUtil parseUtil = ParseUtil.getInstance();
-        parseUtil.updateNewsTable(null, null);
+        parseUtil.push("toyota", "praful@gmail.com");
     }
-    
+//    
 }

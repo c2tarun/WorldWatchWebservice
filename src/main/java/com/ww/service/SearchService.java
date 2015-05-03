@@ -7,6 +7,8 @@ package com.ww.service;
 
 import com.ww.util.HttpUtil;
 import com.ww.util.ParseUtil;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -27,6 +29,11 @@ public class SearchService {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public String searchText(@PathParam("searchText") String searchText, @PathParam("userId") String userId) {
+        try {
+            searchText = URLDecoder.decode(searchText, "UTF-8");
+        } catch (UnsupportedEncodingException ex) {
+            logger.error("Decoding failed ", ex);
+        }
         logger.info("Search Request by {} received: {}", userId, searchText);
         searchText = HttpUtil.encodeString(searchText);
         ParseUtil parseUtil = ParseUtil.getInstance();
